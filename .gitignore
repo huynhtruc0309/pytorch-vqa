@@ -1,4 +1,5 @@
 __pycache__
+visualize_attention
 *.pyc
 vqa
 resnet-14x14.h5

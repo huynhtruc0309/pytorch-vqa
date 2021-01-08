@@ -22,11 +22,11 @@ def attn_hook_function(module, inputs, outputs):
     attention_weight = outputs[-1]  # [n, g, s=h*w]
     n, g, s = attention_weight.shape
     attention_weight = attention_weight.reshape(n, g, h, w)
-    attention_weight = F.interpolate(attention_weight, (img.size[1], img.size[0]), mode='bicubic')
+    attention_weight = F.interpolate(
+        attention_weight, (img.size[1], img.size[0]), mode='bicubic')
 
     assert n == 1
     attention_weight = attention_weight.squeeze(0)  # remove batch_size (g, h, w)
-    list_attention_imgs = []
     for i in range(attention_weight.size(0)):
         weight = attention_weight[i].cpu()      # h, w
         weight_image_np = weight.numpy()
@@ -41,9 +41,6 @@ def attn_hook_function(module, inputs, outputs):
         # list_attention_imgs.append(weight_image)
 
 
-
-
-
 class ApplyAttention(nn.Module):
     def __init__(self):
         super(ApplyAttention, self).__init__()
@@ -54,11 +51,11 @@ class ApplyAttention(nn.Module):
         glimpses = attention.size(1)
 
         # flatten the spatial dims into the third dim, since we don't need to care about how they are arranged
-        input = input.view(n, 1, c, -1) # [n, 1, c, s] s = 14*14
+        input = input.view(n, 1, c, -1)  # [n, 1, c, s] s = 14*14
         attention = attention.view(n, glimpses, -1)
-        attention = F.softmax(attention, dim=-1).unsqueeze(2) # [n, g, 1, s]
-        weighted = attention * input # [n, g, v, s]
-        weighted_mean = weighted.sum(dim=-1) # [n, g, v]
+        attention = F.softmax(attention, dim=-1).unsqueeze(2)  # [n, g, 1, s]
+        weighted = attention * input  # [n, g, v, s]
+        weighted_mean = weighted.sum(dim=-1)  # [n, g, v]
         return weighted_mean, attention.squeeze(2)
 
 
@@ -74,14 +71,15 @@ def tile_2d_over_nd(feature_vector, feature_map):
     """
     n, c = feature_vector.size()
     spatial_size = feature_map.dim() - 2
-    tiled = feature_vector.view(n, c, *([1] * spatial_size)).expand_as(feature_map)
+    tiled = feature_vector.view(
+        n, c, *([1] * spatial_size)).expand_as(feature_map)
     return tiled
 
 
 class ImageProcessor(nn.Module):
     def __init__(self):
         super(ImageProcessor, self).__init__()
-        self.model = caffe_resnet.resnet152(pretrained=True) # resnet34
+        self.model = caffe_resnet.resnet152(pretrained=True)  # resnet34
 
         def save_output(module, input, output):
             self.buffer = output
@@ -91,10 +89,12 @@ class ImageProcessor(nn.Module):
         self.model(x)
         return self.buffer
 
+
 class TextProcessor(nn.Module):
     def __init__(self, embedding_tokens, embedding_features, lstm_features, drop=0.0):
         super(TextProcessor, self).__init__()
-        self.embedding = nn.Embedding(embedding_tokens, embedding_features, padding_idx=0)
+        self.embedding = nn.Embedding(
+            embedding_tokens, embedding_features, padding_idx=0)
         self.drop = nn.Dropout(drop)
         self.tanh = nn.Tanh()
         self.lstm = nn.LSTM(input_size=embedding_features,
@@ -124,7 +124,8 @@ class TextProcessor(nn.Module):
 class Attention(nn.Module):
     def __init__(self, v_features, q_features, mid_features, glimpses, drop=0.0):
         super(Attention, self).__init__()
-        self.v_conv = nn.Conv2d(v_features, mid_features, 1, bias=False)  # let self.lin take care of bias
+        # let self.lin take care of bias
+        self.v_conv = nn.Conv2d(v_features, mid_features, 1, bias=False)
         self.q_lin = nn.Linear(q_features, mid_features)
         self.x_conv = nn.Conv2d(mid_features, glimpses, 1)
 
@@ -194,7 +195,7 @@ class Net(nn.Module):
         q = self.text(q, q_len)
 
         v = v / (v.norm(p=2, dim=1, keepdim=True).expand_as(v) + 1e-8)
-        a = self.attention(v, q)  ####
+        a = self.attention(v, q)
         v = self.apply_attention(v, a)[0]
         v = v.view(v.size(0), -1)
 
@@ -203,12 +204,15 @@ class Net(nn.Module):
         answer = F.softmax(answer, dim=1)
         return answer
 
+
 def main():
     global img
     parser = argparse.ArgumentParser()
     parser.add_argument('input_dir', help='path to image.')
-    parser.add_argument('question', help='question about image')
+    # parser.add_argument('question', help='question about image')
     args = parser.parse_args()
+
+    q = input('Please input the question: ')
 
     # Image preprocess
     img = Image.open(args.input_dir).convert('RGB')
@@ -223,7 +227,6 @@ def main():
         v = net(v)
 
     # Question preprocess
-    q = args.question
     q = q.lower()[:-1]
     q = q.split(' ')
     q_len = torch.tensor([len(q)], dtype=torch.long)
@@ -233,13 +236,13 @@ def main():
         vocab_json = json.load(fd)
 
     vec = torch.zeros(max_question_length).long()
-    
+
     token_to_index = vocab_json['question']
-    
+
     for i, token in enumerate(q):
         index = token_to_index.get(token, 0)
         vec[i] = index
-    
+
     vec = vec.unsqueeze(dim=0)
 
     num_tokens = len(token_to_index) + 1
@@ -254,10 +257,10 @@ def main():
     conf, ans = out.topk(k=5, dim=1)
     conf, ans = conf.tolist()[0], ans.tolist()[0]
 
+    print('TOP 5 PREDICT ANSWER:')
     for c, a in zip(conf, ans):
         print(get_key(a, vocab_json['answer']), c)
 
+
 if __name__ == '__main__':
     main()
-
-    
