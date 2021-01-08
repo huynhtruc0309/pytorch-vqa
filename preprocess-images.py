@@ -15,7 +15,7 @@ from resnet import resnet as caffe_resnet
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.model = caffe_resnet.resnet152(pretrained=True)
+        self.model = caffe_resnet.resnet152(pretrained=True) # resnet34
 
         def save_output(module, input, output):
             self.buffer = output
@@ -60,7 +60,9 @@ def main():
 
         i = j = 0
         for ids, imgs in tqdm(loader):
-            imgs = Variable(imgs.cuda(async=True), volatile=True)
+            print(imgs.shape)
+            imgs = Variable(imgs, requires_grad=True)
+            print(imgs.shape)
             out = net(imgs)
 
             j = i + imgs.size(0)

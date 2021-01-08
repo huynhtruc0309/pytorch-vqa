@@ -57,6 +57,8 @@ class VQA(data.Dataset):
         self.answer_to_index = self.vocab['answer']
 
         # q and a
+        self.raw_questions = [q['question'] for q in questions_json['questions']]
+        self.raw_answers = [[a['answer'] for a in ans_dict['answers']] for ans_dict in answers_json['annotations']]
         self.questions = list(prepare_questions(questions_json))
         self.answers = list(prepare_answers(answers_json))
         self.questions = [self._encode_question(q) for q in self.questions]
