@@ -23,7 +23,7 @@ Note that the model in [my other VQA repo](https://github.com/Cyanogenoid/vqa-co
 
 - Clone this repository with:
 ```
-git clone https://github.com/Cyanogenoid/pytorch-vqa --recursive
+git clone https://github.com/huynhtruc0309/pytorch-vqa --recursive
 ```
 - Set the paths to your downloaded [questions, answers, and MS COCO images][4] in `config.py`.
   - `qa_path` should contain the files `OpenEnded_mscoco_train2014_questions.json`, `OpenEnded_mscoco_val2014_questions.json`, `mscoco_train2014_annotations.json`, `mscoco_val2014_annotations.json`.
@@ -59,4 +59,4 @@ python view-log.py <path to .pth log>
 [2]: http://visualqa.org/
 [3]: https://github.com/ruotianluo/pytorch-resnet
 [4]: http://visualqa.org/vqa_v1_download.html
-[5]: https://github.com/Cyanogenoid/pytorch-vqa/releases
+[5]: https://github.com/huynhtruc0309/pytorch-vqa/releases
